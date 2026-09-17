@@ -62,7 +62,7 @@ Overrides:
 
 ```bash
 TRAFFIC_SESSIONS=500 TRAFFIC_CONCURRENCY=6 npm run traffic
-TRAFFIC_BASE_URL=https://my-deployed-copy.example npm run traffic
+TRAFFIC_BASE_URL=http://localhost:3000 npm run traffic    # non-default port/origin
 TRAFFIC_HEADED=1 TRAFFIC_SESSIONS=3 npm run traffic       # watch it work
 TRAFFIC_VERIFY_FAIL=wrong-code npm run traffic            # fast mode, see below
 ```
@@ -105,15 +105,20 @@ Behaviour:
 
 ## Pipeline: order of operations
 
-1. **Run or deploy the app.** `npm run build && npm start`, or deploy a copy somewhere reachable.
+**No deployment is required — the whole loop runs locally.** Novus's setup workflow clones and
+analyzes the *repository source* (`CloneRepoStep` → `DetectPlatformStep` → `AnalyzePagesFeaturesStep`);
+there is no URL crawl anywhere in the setup DAG, so the app does not have to be reachable from the
+internet to be onboarded. Combined with host-agnostic page rules (see limitations), running the
+instrumented build on `localhost:4300` is enough.
+
+1. **Run the app locally.** `npm run build && npm start`.
 2. **Onboard the repository in Novus.** Point it at this repo. The setup workflow reads the source
    and discovers pages, features, and track events; a model then infers funnel definitions from
    them.
 3. **Merge the install PR that Novus opens.** This is the step people forget. Novus's
    `InstallPendoWebStep` raises a pull request that adds the snippet. Nothing is collected until it
    is merged.
-4. **Pull that branch locally** (or redeploy from it) so the copy you are about to drive is the
-   instrumented one.
+4. **Pull that branch locally** so the copy you are about to drive is the instrumented one.
 5. **Run the app** from the instrumented build.
 6. **Run the traffic generator** against it: `npm run traffic`. Use a large enough
    `TRAFFIC_SESSIONS` that each funnel step has a usable denominator — 200 is the default, 500+ is
@@ -152,8 +157,8 @@ The intended drop-off rates the generator produces:
 
 Each funnel step is a **real, distinct URL path** with its own `<h1>` and its own page title, and a
 single primary advance action rendered as a `<button>` carrying both a stable `id` and a matching
-`data-testid` (for example `id="checkout-payment-submit"`). This matters: page rules key off URLs,
-feature rules key off selectors, and funnel steps are resolved back to page and feature artifacts by
+`data-testid` (for example `id="checkout-payment-submit"`). This matters: page rules key off URL
+paths, feature rules key off selectors, and funnel steps are resolved back to page and feature artifacts by
 event identifier. A step that cannot be resolved becomes an empty sentinel, the funnel never syncs,
 and an unsynced funnel is skipped entirely by the analytics query — so the flows are kept
 unambiguous and one-action-per-page on purpose.
@@ -163,13 +168,14 @@ behind `src/lib/session-state.ts`, so the whole app runs with zero setup.
 
 ## Known limitations / things to verify
 
-- **Page rules key off URLs, and this is the most likely thing you will have to fix.** If Novus
-  generates page rules against a deployed origin (`https://something/checkout/payment`) and you then
-  run the app at `http://localhost:4300/checkout/payment`, the rules will not match and you will
-  collect nothing while everything appears to be working. Check the generated page rules first
-  whenever traffic runs cleanly but no data shows up, and adjust them to match the origin you are
-  actually driving. Running the traffic generator against the *same* origin the app was onboarded
-  from avoids the problem entirely (`TRAFFIC_BASE_URL=...`).
+- **Page rules are authored host-agnostically, so running at `localhost` matches fine.** Novus
+  generates rules of the form `//*/checkout/payment` rather than pinning an origin, and two
+  independent mechanisms enforce it: the page/feature prompt instructs the model to author every rule
+  host-agnostically and never pin the host, and a deterministic lint pass rewrites any path-only rule
+  to `//*<path>` as a backstop. Such a rule matches `http://localhost:4300/checkout/payment` exactly
+  as well as any other host, and nothing in the pages/features transformer injects a concrete domain.
+  No origin adjustment should be needed. If a generated rule *does* come back with a pinned host,
+  that is the unexpected case — edit it to the `//*/…` form in Pendo — but do not plan around it.
 - **Pendo path aggregation latency for a brand-new application is unknown.** A newly created app has
   no historical aggregates, and the first roll-up of page/feature data may take substantially longer
   than the steady-state latency for an established app. Signals may not appear immediately after a
