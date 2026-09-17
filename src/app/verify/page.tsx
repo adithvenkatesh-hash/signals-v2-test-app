@@ -38,14 +38,37 @@ export default function VerifyPage() {
   }, [sendCode]);
 
   function handleSubmit() {
-    if (Date.now() - issuedAt > VERIFICATION_CODE_TTL_MS) {
+    const timeSinceCodeIssued = Date.now() - issuedAt;
+
+    if (timeSinceCodeIssued > VERIFICATION_CODE_TTL_MS) {
+      if (typeof pendo !== 'undefined') {
+        pendo.track('email_verification_failed', {
+          failureReason: 'expired',
+          timeSinceCodeIssued,
+        });
+      }
+
       setError('That code has expired. Request a new one.');
       return;
     }
     if (entered.trim() !== issuedCode) {
+      if (typeof pendo !== 'undefined') {
+        pendo.track('email_verification_failed', {
+          failureReason: 'incorrect',
+          timeSinceCodeIssued,
+        });
+      }
+
       setError('That code is incorrect.');
       return;
     }
+
+    if (typeof pendo !== 'undefined') {
+      pendo.track('email_verified', {
+        timeSinceCodeIssued,
+      });
+    }
+
     setError('');
     router.push('/profile');
   }

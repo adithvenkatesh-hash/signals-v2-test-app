@@ -21,6 +21,15 @@ export default function CartPage() {
 
   function handleCheckout() {
     writeSessionState({ cartItemCount: itemCount });
+
+    if (typeof pendo !== 'undefined') {
+      pendo.track('checkout_started', {
+        itemCount,
+        subtotal,
+        skus: LINE_ITEMS.map((item) => item.sku).join(','),
+      });
+    }
+
     router.push('/checkout/shipping');
   }
 

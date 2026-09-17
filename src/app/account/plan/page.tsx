@@ -16,10 +16,19 @@ export default function AccountPlanPage() {
   }, []);
 
   function selectCycle(cycle: BillingCycle) {
+    const prepaidDaysRemaining = cycle === 'annual' ? ANNUAL_TERM_DAYS : 0;
+
+    if (typeof pendo !== 'undefined') {
+      pendo.track('billing_cycle_changed', {
+        newBillingCycle: cycle,
+        prepaidDaysRemaining,
+      });
+    }
+
     setBillingCycle(cycle);
     writeSessionState({
       billingCycle: cycle,
-      prepaidDaysRemaining: cycle === 'annual' ? ANNUAL_TERM_DAYS : 0,
+      prepaidDaysRemaining,
     });
   }
 
