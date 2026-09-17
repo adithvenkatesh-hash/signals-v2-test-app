@@ -38,6 +38,15 @@ export default function AccountCancelPage() {
   }, []);
 
   function handleConfirm() {
+    const previousBillingCycle = readSessionState().billingCycle;
+
+    if (typeof pendo !== 'undefined') {
+      pendo.track('subscription_cancelled', {
+        cancellationReason: reason,
+        previousBillingCycle,
+      });
+    }
+
     writeSessionState({ billingCycle: 'monthly', prepaidDaysRemaining: 0 });
     setCancelled(true);
   }

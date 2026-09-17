@@ -19,6 +19,13 @@ export default function ProfilePage() {
     }
     setError('');
     writeSessionState({ profileFullName: fullName.trim() });
+
+    if (typeof pendo !== 'undefined') {
+      pendo.track('profile_completed', {
+        role,
+      });
+    }
+
     router.push('/workspace');
   }
 

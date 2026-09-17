@@ -4,6 +4,9 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { readSessionState } from '@/lib/session-state';
 
+/** Module-level guard: onboarding is a one-time milestone per session. */
+const trackedOnboarding = new Set<string>();
+
 export default function WorkspacePage() {
   const router = useRouter();
   const [fullName, setFullName] = useState('');
@@ -13,7 +16,16 @@ export default function WorkspacePage() {
     const state = readSessionState();
     setFullName(state.profileFullName);
     const domain = state.signupEmail.split('@')[1] ?? '';
-    setWorkspaceName(domain ? domain.split('.')[0] : 'my-workspace');
+    const wsName = domain ? domain.split('.')[0] : 'my-workspace';
+    setWorkspaceName(wsName);
+
+    if (!trackedOnboarding.has(wsName) && typeof pendo !== 'undefined') {
+      trackedOnboarding.add(wsName);
+      pendo.track('onboarding_completed', {
+        workspaceName: wsName,
+        emailDomain: domain,
+      });
+    }
   }, []);
 
   return (

@@ -14,8 +14,17 @@ export default function CheckoutConfirmationPage() {
   const [shippingCity, setShippingCity] = useState('');
 
   useEffect(() => {
-    setOrderNumber(buildOrderNumber());
-    setShippingCity(readSessionState().shippingCity);
+    const order = buildOrderNumber();
+    const city = readSessionState().shippingCity;
+    setOrderNumber(order);
+    setShippingCity(city);
+
+    if (typeof pendo !== 'undefined') {
+      pendo.track('order_completed', {
+        orderNumber: order,
+        shippingCity: city,
+      });
+    }
   }, []);
 
   return (

@@ -21,6 +21,13 @@ export default function SignupPage() {
     }
     setError('');
     writeSessionState({ signupEmail: email });
+
+    if (typeof pendo !== 'undefined') {
+      pendo.track('account_created', {
+        emailDomain: email.split('@')[1] ?? '',
+      });
+    }
+
     router.push('/verify');
   }
 

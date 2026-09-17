@@ -68,6 +68,21 @@ export default function CheckoutPaymentPage() {
   function handleSubmit() {
     const validationError = validateCard(cardNumber, expiry, cvc);
     if (validationError) {
+      const errorType = validationError.includes('15 or 16')
+        ? 'invalid_card_number'
+        : validationError.includes('declined')
+          ? 'luhn_check_failed'
+          : validationError.includes('Expiry')
+            ? 'invalid_expiry'
+            : 'invalid_cvc';
+
+      if (typeof pendo !== 'undefined') {
+        pendo.track('payment_failed', {
+          errorMessage: validationError,
+          errorType,
+        });
+      }
+
       setStatus({ tone: 'error', message: validationError });
       return;
     }

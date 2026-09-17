@@ -19,6 +19,13 @@ export default function CheckoutShippingPage() {
     }
     setError('');
     writeSessionState({ shippingCity: city.trim() });
+
+    if (typeof pendo !== 'undefined') {
+      pendo.track('shipping_address_submitted', {
+        shippingCity: city.trim(),
+      });
+    }
+
     router.push('/checkout/payment');
   }
 
