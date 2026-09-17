@@ -1,0 +1,27 @@
+{
+  "name": "signals-v2-test-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Purpose-built frontend fixture for exercising Pendo/Novus Signals V2 with known ground-truth defects.",
+  "scripts": {
+    "dev": "next dev --port 4300",
+    "build": "next build",
+    "start": "next start --port 4300",
+    "typecheck": "tsc --noEmit",
+    "traffic": "tsx scripts/generate-traffic.ts",
+    "traffic:install": "playwright install chromium"
+  },
+  "dependencies": {
+    "next": "^16.3.5",
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.3",
+    "@types/react": "19.1.8",
+    "@types/react-dom": "19.1.6",
+    "playwright": "1.55.1",
+    "tsx": "4.20.3",
+    "typescript": "5.8.3"
+  }
+}
