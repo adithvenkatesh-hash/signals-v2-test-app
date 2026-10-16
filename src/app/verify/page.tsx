@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { readSessionState } from '@/lib/session-state';
 
 // KNOWN DEFECT (Signup / verify): this was specified as a 15 minute code
@@ -24,6 +24,7 @@ export default function VerifyPage() {
   const [issuedAt, setIssuedAt] = useState(0);
   const [entered, setEntered] = useState('');
   const [error, setError] = useState('');
+  const resendCount = useRef(0);
 
   const sendCode = useCallback(() => {
     setIssuedCode(issueCode());
@@ -36,6 +37,19 @@ export default function VerifyPage() {
     setEmail(readSessionState().signupEmail);
     sendCode();
   }, [sendCode]);
+
+  function handleResend() {
+    const timeSinceLastCode = Date.now() - issuedAt;
+    resendCount.current += 1;
+    sendCode();
+
+    if (typeof pendo !== 'undefined') {
+      pendo.track('verification_code_resent', {
+        timeSinceLastCode,
+        resendCount: resendCount.current,
+      });
+    }
+  }
 
   function handleSubmit() {
     const timeSinceCodeIssued = Date.now() - issuedAt;
@@ -119,7 +133,7 @@ export default function VerifyPage() {
           data-testid="signup-verify-resend"
           className="secondary"
           type="button"
-          onClick={sendCode}
+          onClick={handleResend}
         >
           Send a new code
         </button>

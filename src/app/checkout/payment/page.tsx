@@ -87,6 +87,24 @@ export default function CheckoutPaymentPage() {
       return;
     }
     setStatus({ tone: 'info', message: 'Card saved.' });
+
+    if (typeof pendo !== 'undefined') {
+      const digits = cardNumber.replace(/\s+/g, '');
+      const cardType = digits.startsWith('4')
+        ? 'visa'
+        : digits.startsWith('5')
+          ? 'mastercard'
+          : digits.startsWith('3')
+            ? 'amex'
+            : 'other';
+      const [expiryMonth, expiryYear] = expiry.split('/');
+      pendo.track('payment_succeeded', {
+        cardType,
+        expiryMonth,
+        expiryYear,
+      });
+    }
+
     router.push('/checkout/confirmation');
   }
 
